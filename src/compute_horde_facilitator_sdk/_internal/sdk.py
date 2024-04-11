@@ -3,20 +3,6 @@ from typing import Any
 import httpx
 
 
-def acquire_token(base_url: str, username: str, password: str) -> str:
-    with httpx.Client() as client:
-        response = client.post(f"{base_url}/api-token-auth/", data={"username": username, "password": password})
-    response.raise_for_status()
-    return response.json()["token"]
-
-
-async def async_acquire_token(base_url: str, username: str, password: str) -> str:
-    async with httpx.AsyncClient() as client:
-        response = await client.post(f"{base_url}/api-token-auth/", data={"username": username, "password": password})
-    response.raise_for_status()
-    return response.json()["token"]
-
-
 class FacilitatorClient:
     def __init__(self, base_url: str, token: str):
         self.base_url = base_url
@@ -46,7 +32,12 @@ class FacilitatorClient:
         return response.json()
 
     def create_docker_job(
-        self, docker_image: str, args: str = "", env: dict[str, str] = {}, use_gpu: bool = False, input_url: str = ""
+        self,
+        docker_image: str,
+        args: str = "",
+        env: dict[str, str] = {},
+        use_gpu: bool = False,
+        input_url: str = "",
     ) -> dict[str, Any]:
         data = {
             "docker_image": docker_image,
@@ -67,7 +58,9 @@ class AsyncFacilitatorClient:
     def __init__(self, base_url: str, token: str):
         self.base_url = base_url
         self.token = token
-        self.client = httpx.AsyncClient(base_url=base_url, headers={"Authorization": f"Token {token}"})
+        self.client = httpx.AsyncClient(
+            base_url=base_url, headers={"Authorization": f"Token {token}"}
+        )
 
     async def __aenter__(self):
         return self
@@ -92,9 +85,20 @@ class AsyncFacilitatorClient:
         return response.json()
 
     async def create_docker_job(
-        self, docker_image: str, args: str = "", env: dict[str, str] = {}, use_gpu: bool = False, input_url: str = ""
+        self,
+        docker_image: str,
+        args: str = "",
+        env: dict[str, str] = {},
+        use_gpu: bool = False,
+        input_url: str = "",
     ) -> dict[str, Any]:
-        data = {"docker_image": docker_image, "args": args, "env": env, "use_gpu": use_gpu, "input_url": input_url}
+        data = {
+            "docker_image": docker_image,
+            "args": args,
+            "env": env,
+            "use_gpu": use_gpu,
+            "input_url": input_url,
+        }
         response = await self.client.post("/job-docker/", json=data)
         response.raise_for_status()
         return response.json()
