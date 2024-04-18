@@ -1,0 +1,53 @@
+[project]
+name = "compute-horde-facilitator-sdk"
+version = "0.0.1"
+description = "SDK library to communicate with ComputeHorde Facilitator"
+authors = [{name = "Backend Developers LTD"}]
+dependencies = [
+    "httpx>=0.27.0",
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+format = ["ruff"]
+codespell = [
+    "codespell[toml]",
+]
+test = [
+    "pytest",
+    "pytest-httpx",
+    "pytest-asyncio",
+]
+nox = [
+    "nox>=2024.3.2",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# TODO add D
+select = ["E", "F", "I", "UP"]
+# TODO: remove E501 once docstrings are formatted
+ignore = [
+    "D100", "D105", "D107", "D200", "D202", "D203", "D205", "D212", "D400", "D401", "D415",
+    "D101", "D102","D103", "D104", # TODO remove once we have docstring for all public methods
+    "E501", # TODO: remove E501 once docstrings are formatted
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"test/**" = ["D", "F403", "F405"]
+
+[tool.codespell]
+skip = 'pdm.lock'
