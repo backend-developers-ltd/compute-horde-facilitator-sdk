@@ -26,6 +26,7 @@ job = computehorde.create_docker_job(
         input_url='https://raw.githubusercontent.com/backend-developers-ltd/'
                   'ComputeHorde-examples/master/input_shapes.zip'
         # The zip file will be extracted within the Docker container to the /volume directory
+        use_gpu=True,
 )
 
 while True:
