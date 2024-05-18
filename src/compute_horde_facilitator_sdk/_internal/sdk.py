@@ -2,9 +2,11 @@ from typing import Any
 
 import httpx
 
+BASE_URL = 'https://facilitator.computehorde.io/api/v1/'
+
 
 class FacilitatorClient:
-    def __init__(self, base_url: str, token: str):
+    def __init__(self, token: str, base_url: str = BASE_URL):
         self.base_url = base_url
         self.token = token
         self.client = httpx.Client(base_url=base_url, headers={"Authorization": f"Token {token}"})
@@ -55,7 +57,7 @@ class FacilitatorClient:
 
 
 class AsyncFacilitatorClient:
-    def __init__(self, base_url: str, token: str):
+    def __init__(self, token: str, base_url: str = BASE_URL):
         self.base_url = base_url
         self.token = token
         self.client = httpx.AsyncClient(
