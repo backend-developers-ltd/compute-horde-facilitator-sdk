@@ -24,7 +24,7 @@ computehorde = FacilitatorClient(
 job = computehorde.create_docker_job(
         docker_image='backenddevelopersltd/gen_caption_v2',
         input_url='https://raw.githubusercontent.com/backend-developers-ltd/'
-                  'ComputeHorde-examples/master/input_shapes.zip'
+                  'ComputeHorde-examples/master/input_shapes.zip',
         # The zip file will be extracted within the Docker container to the /volume directory
         use_gpu=True,
 )
