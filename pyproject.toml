@@ -29,6 +29,9 @@ build-backend = "pdm.backend"
 pythonpath = ["."]  # allow for `import tests` in test files
 target_package_name = "compute_horde_facilitator_sdk"  # required by pytest-apiver
 
+[tool.pdm]
+distribution = true
+
 [tool.pdm.dev-dependencies]
 test = [
     "freezegun",

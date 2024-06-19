@@ -140,7 +140,8 @@ def format_(session):
 @nox.session(python=PYTHON_DEFAULT_VERSION, tags=["lint", "check"])
 def lint(session):
     """Run linters in readonly mode."""
-    install(session, "lint")
+    # "test" group is required for mypy to work against test files
+    install(session, "lint", "test")
     session.run("ruff", "check", "--diff", "--unsafe-fixes", ".")
     session.run("ruff", "format", "--diff", ".")
     session.run("mypy", ".")

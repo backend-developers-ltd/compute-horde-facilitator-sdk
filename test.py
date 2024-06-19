@@ -1,10 +1,9 @@
+import os
 import time
 
 from compute_horde_facilitator_sdk.v1 import FacilitatorClient
 
-computehorde = FacilitatorClient(
-    token=...,
-)
+computehorde = FacilitatorClient(token=os.environ["COMPUTE_HORDE_FACILITATOR_TOKEN"])
 
 job = computehorde.create_docker_job(
     docker_image="backenddevelopersltd/gen_caption_v2",
