@@ -5,7 +5,7 @@
   "context": {
     "cookiecutter": {
       "package_name": "compute_horde_facilitator_sdk",
-      "repository_github_url": "https://backend-developers-ltd/compute-horde-facilitator-sdk",
+      "repository_github_url": "https://github.com/backend-developers-ltd/compute-horde-facilitator-sdk",
       "is_django_package": "n",
       "_jinja2_env_vars": {
         "block_start_string": "# COOKIECUTTER{%",

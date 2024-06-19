@@ -21,8 +21,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Source" = "https://backend-developers-ltd/compute-horde-facilitator-sdk"
-"Issue Tracker" = "https://backend-developers-ltd/compute-horde-facilitator-sdk/issues"
+"Source" = "https://github.com/backend-developers-ltd/compute-horde-facilitator-sdk"
+"Issue Tracker" = "https://github.com/backend-developers-ltd/compute-horde-facilitator-sdk/issues"
 
 [build-system]
 requires = ["pdm-backend"]
@@ -83,8 +83,8 @@ directory = "changelog.d"
 filename = "CHANGELOG.md"
 start_string = "<!-- towncrier release notes start -->\n"
 underlines = ["", "", ""]
-title_format = "## [{version}](https://backend-developers-ltd/compute-horde-facilitator-sdk/releases/tag/v{version}) - {project_date}"
-issue_format = "[#{issue}](https://backend-developers-ltd/compute-horde-facilitator-sdk/issues/{issue})"
+title_format = "## [{version}](https://github.com/backend-developers-ltd/compute-horde-facilitator-sdk/releases/tag/v{version}) - {project_date}"
+issue_format = "[#{issue}](https://github.com/backend-developers-ltd/compute-horde-facilitator-sdk/issues/{issue})"
 
 [[tool.towncrier.type]]
 directory = "removed"
