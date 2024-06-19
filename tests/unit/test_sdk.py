@@ -14,12 +14,12 @@ def token():
 
 @pytest.fixture
 def facilitator_client(apiver_module, base_url, token):
-    return apiver_module.FacilitatorClient(base_url, token)
+    return apiver_module.FacilitatorClient(token, base_url)
 
 
 @pytest_asyncio.fixture
 async def async_facilitator_client(apiver_module, base_url, token):
-    async with apiver_module.AsyncFacilitatorClient(base_url, token) as client:
+    async with apiver_module.AsyncFacilitatorClient(token, base_url) as client:
         yield client
 
 
