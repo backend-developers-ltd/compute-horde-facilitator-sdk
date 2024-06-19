@@ -1,6 +1,5 @@
 import pytest
 import pytest_asyncio
-from apiver_deps import AsyncFacilitatorClient, FacilitatorClient
 
 
 @pytest.fixture
@@ -14,13 +13,13 @@ def token():
 
 
 @pytest.fixture
-def facilitator_client(base_url, token):
-    return FacilitatorClient(base_url, token)
+def facilitator_client(apiver_module, base_url, token):
+    return apiver_module.FacilitatorClient(token, base_url)
 
 
 @pytest_asyncio.fixture
-async def async_facilitator_client(base_url, token):
-    async with AsyncFacilitatorClient(base_url, token) as client:
+async def async_facilitator_client(apiver_module, base_url, token):
+    async with apiver_module.AsyncFacilitatorClient(token, base_url) as client:
         yield client
 
 
@@ -96,7 +95,5 @@ async def test_async_create_docker_job(async_facilitator_client, httpx_mock):
     input_url = "https://example.com/input"
     expected_response = {"id": 1, "status": "queued"}
     httpx_mock.add_response(json=expected_response)
-    response = await async_facilitator_client.create_docker_job(
-        docker_image, args, env, use_gpu, input_url
-    )
+    response = await async_facilitator_client.create_docker_job(docker_image, args, env, use_gpu, input_url)
     assert response == expected_response
