@@ -2,7 +2,7 @@ from typing import Any
 
 import httpx
 
-BASE_URL = 'https://facilitator.computehorde.io/api/v1/'
+BASE_URL = "https://facilitator.computehorde.io/api/v1/"
 
 
 class FacilitatorClient:
@@ -60,9 +60,7 @@ class AsyncFacilitatorClient:
     def __init__(self, token: str, base_url: str = BASE_URL):
         self.base_url = base_url
         self.token = token
-        self.client = httpx.AsyncClient(
-            base_url=base_url, headers={"Authorization": f"Token {token}"}
-        )
+        self.client = httpx.AsyncClient(base_url=base_url, headers={"Authorization": f"Token {token}"})
 
     async def __aenter__(self):
         return self
