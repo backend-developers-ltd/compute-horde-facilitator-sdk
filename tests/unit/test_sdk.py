@@ -1,6 +1,5 @@
 import pytest
 import pytest_asyncio
-from apiver_deps import AsyncFacilitatorClient, FacilitatorClient
 
 
 @pytest.fixture
@@ -14,13 +13,13 @@ def token():
 
 
 @pytest.fixture
-def facilitator_client(base_url, token):
-    return FacilitatorClient(base_url, token)
+def facilitator_client(apiver_module, base_url, token):
+    return apiver_module.FacilitatorClient(base_url, token)
 
 
 @pytest_asyncio.fixture
-async def async_facilitator_client(base_url, token):
-    async with AsyncFacilitatorClient(base_url, token) as client:
+async def async_facilitator_client(apiver_module, base_url, token):
+    async with apiver_module.AsyncFacilitatorClient(base_url, token) as client:
         yield client
 
 
