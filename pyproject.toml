@@ -20,6 +20,7 @@ dynamic = [
 ]
 dependencies = [
     "httpx>=0.27.0",
+    "phx-class-registry>=4.1.0",
 ]
 
 [project.urls]
@@ -38,6 +39,7 @@ source = "scm"
 
 [tool.pdm.dev-dependencies]
 test = [
+    "bittensor; python_version < '3.13'",  # workaround until https://github.com/opentensor/bittensor/pull/2053 is merged
     "freezegun",
     "pytest",
     "pytest-apiver",
@@ -130,8 +132,10 @@ showcontent = true
 
 [[tool.mypy.overrides]]
 module = [
+    "bittensor",
     "nox",
     "pytest",
     "tests.*",
+    "class_registry",
 ]
 ignore_missing_imports = true
