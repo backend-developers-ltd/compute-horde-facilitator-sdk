@@ -9,13 +9,6 @@ from compute_horde_facilitator_sdk._internal.typing import JSONDict, JSONType
 BASE_URL = "https://facilitator.computehorde.io/api/v1/"
 
 
-def signature_payload(method: str, url: str, json: JSONType | None = None) -> JSONType:
-    return {
-        "action": f"{method.upper()} {url}",
-        "json": json,
-    }
-
-
 HTTPClientType = typing.TypeVar("HTTPClientType", bound=httpx.Client | httpx.AsyncClient)
 HTTPResponseType = typing.TypeVar("HTTPResponseType", bound=httpx.Response | typing.Awaitable[httpx.Response])
 
@@ -53,8 +46,9 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
     ) -> HTTPResponseType:
         request = self.client.build_request(method=method, url=url, json=json, params=params)
         if self.signer:
-            sign_payload = signature_payload(request.method, str(request.url), json=json)
-            signature = self.signer.sign(sign_payload)
+            signature = self.signer.signature_for_request(
+                request.method, str(request.url), headers=dict(request.headers), json=json
+            )
             signature_headers = signature_to_headers(signature)
             request.headers.update(signature_headers)
 

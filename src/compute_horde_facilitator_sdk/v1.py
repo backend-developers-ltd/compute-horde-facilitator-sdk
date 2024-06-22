@@ -1,4 +1,4 @@
-from ._internal.sdk import AsyncFacilitatorClient, FacilitatorClient, signature_payload
+from ._internal.sdk import AsyncFacilitatorClient, FacilitatorClient
 from ._internal.signature import (
     SIGNERS_REGISTRY,
     VERIFIERS_REGISTRY,
@@ -10,6 +10,7 @@ from ._internal.signature import (
     SignatureNotFound,
     SignatureTimeoutException,
     signature_from_headers,
+    verify_request,
     verify_signature,
 )
 
@@ -26,6 +27,6 @@ __all__ = [
     "SignatureNotFound",
     "SignatureTimeoutException",
     "signature_from_headers",
-    "signature_payload",
     "verify_signature",
+    "verify_request",
 ]

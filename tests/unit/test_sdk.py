@@ -2,6 +2,7 @@ import json
 
 import pytest
 import pytest_asyncio
+from compute_horde_facilitator_sdk._internal.signature import signature_payload
 
 
 @pytest.fixture
@@ -29,11 +30,12 @@ def verified_httpx_mock(httpx_mock, verifier, apiver_module):
     yield
 
     for request in httpx_mock.get_requests():
-        signature = apiver_module.signature_from_headers(request.headers)
-        sign_payload = apiver_module.signature_payload(
-            request.method, str(request.url), json=json.loads(request.content) if request.content else None
+        apiver_module.verify_request(
+            request.method,
+            str(request.url),
+            request.headers,
+            json=json.loads(request.content) if request.content else None,
         )
-        apiver_module.verify_signature(sign_payload, signature)
 
 
 @pytest.fixture
@@ -123,8 +125,8 @@ async def test_async_create_docker_job(async_facilitator_client, httpx_mock, ver
     assert response == expected_response
 
 
-def test_signature_payload(apiver_module):
-    assert apiver_module.signature_payload("get", "https://example.com", json={"a": 1}) == {
-        "action": "GET https://example.com",
+def test_signature_payload():
+    assert signature_payload("get", "https://example.com/car", headers={"Date": "X"}, json={"a": 1}) == {
+        "action": "GET /car",
         "json": {"a": 1},
     }

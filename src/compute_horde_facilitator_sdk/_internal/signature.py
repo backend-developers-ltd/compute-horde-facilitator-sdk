@@ -6,6 +6,7 @@ import dataclasses
 import datetime
 import hashlib
 import json
+import re
 import time
 import typing
 
@@ -32,6 +33,7 @@ class Signature:
 def verify_signature(
     payload: JSONType | bytes,
     signature: Signature,
+    *,
     newer_than: datetime.datetime | None = None,
 ):
     """
@@ -67,6 +69,36 @@ def signature_from_headers(headers: dict[str, str], prefix: str = "X-CH-") -> Si
         TypeError,
     ) as e:
         raise SignatureNotFound("Signature not found in headers") from e
+
+
+def verify_request(
+    method: str,
+    url: str,
+    headers: dict[str, str],
+    json: JSONType | None = None,
+    *,
+    newer_than: datetime.datetime | None = None,
+    signature_extractor=signature_from_headers,
+) -> Signature | None:
+    """
+    Verifies the signature of the request
+
+    :param method: HTTP method
+    :param url: request URL
+    :param headers: request headers
+    :param json: request JSON payload
+    :param newer_than: if provided, checks if the signature is newer than the provided timestamp
+    :param signature_extractor: function to extract the signature from the headers
+    :return: Signature object or None if no signature found
+    :raises SignatureInvalidException: if the signature is invalid
+    """
+    try:
+        signature = signature_extractor(headers)
+    except SignatureNotFound:
+        return None
+    payload = signature_payload(method, url, headers=headers, json=json)
+    verify_signature(payload, signature, newer_than=newer_than)
+    return signature
 
 
 def signature_to_headers(signature: Signature, prefix: str = "X-CH-") -> dict[str, str]:
@@ -117,6 +149,17 @@ def hash_message_signature(payload: bytes | JSONType, signature: Signature) -> b
     return hasher.digest()
 
 
+_REMOVE_URL_SCHEME_N_HOST_RE = re.compile(r"^\w+://[^/]+")
+
+
+def signature_payload(method: str, url: str, headers: dict[str, str], json: JSONType | None = None) -> JSONType:
+    reduced_url = _REMOVE_URL_SCHEME_N_HOST_RE.sub("", url)
+    return {
+        "action": f"{method.upper()} {reduced_url}",
+        "json": json,
+    }
+
+
 class Signer(abc.ABC):
     signature_type: typing.ClassVar[str]
 
@@ -130,6 +173,11 @@ class Signer(abc.ABC):
         payload_hash = hash_message_signature(payload, signature)
         signature.signature = self._sign(payload_hash)
         return signature
+
+    def signature_for_request(
+        self, method: str, url: str, headers: dict[str, str], json: JSONType | None = None
+    ) -> Signature:
+        return self.sign(signature_payload(method, url, headers=headers, json=json))
 
     @abc.abstractmethod
     def _sign(self, payload: bytes) -> bytes:
@@ -155,6 +203,18 @@ class Verifier(abc.ABC):
         if newer_than is not None:
             if newer_than > datetime.datetime.fromtimestamp(signature.timestamp_ns / 1_000_000_000):
                 raise SignatureTimeoutException("Signature is too old")
+
+    def verify_request(
+        self,
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        json: JSONType | None = None,
+        newer_than: datetime.datetime | None = None,
+    ):
+        signature = signature_from_headers(headers)
+        payload = signature_payload(method, url, headers=headers, json=json)
+        self.verify(payload, signature, newer_than)
 
     @abc.abstractmethod
     def _verify(self, payload: bytes, signature: Signature) -> None:
