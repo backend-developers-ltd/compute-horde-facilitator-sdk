@@ -73,6 +73,7 @@ select = [
     "TCH005",
 ]
 ignore = [
+    "E501",  # checked&fixed by ruff format
     "D100", "D105", "D107", "D200", "D202", "D203", "D205", "D212", "D400", "D401", "D415",
     "D101", "D102", "D103", "D104", # TODO remove once we have docstring for all public methods
 ]
