@@ -25,11 +25,7 @@ job = compute_horde.create_docker_job(
     use_gpu=True,
 )
 
-while True:
-    job = compute_horde.get_job(job["uuid"])
-    if job["status"] in ["Completed", "Failed"]:
-        break
-    time.sleep(10)
+job = compute_horde.wait_for_job(job["uuid"])
 
 print(
     f'Job finished with status: {job["status"]}. Stdout is: "{job["stdout"]}",'

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import os
+from unittest.mock import patch
 
 import bittensor
 import pytest
+from freezegun import freeze_time
 
 pytest.register_assert_rewrite("test.unit")
 
@@ -34,3 +36,25 @@ def bittensor_wallet(env, bittensor_keypair):
     wallet = bittensor.wallet(name="ch_facilitator_test_wallet")
     wallet.set_hotkey(bittensor_keypair)
     return wallet
+
+
+@pytest.fixture
+def sleep_mock():
+    with freeze_time() as frozen_time, patch("time.sleep") as sleep_mock:
+
+        def tick(seconds):
+            frozen_time.tick(delta=seconds)
+
+        sleep_mock.side_effect = tick
+        yield sleep_mock
+
+
+@pytest.fixture
+def async_sleep_mock():
+    with freeze_time() as frozen_time, patch("asyncio.sleep") as sleep_mock:
+
+        async def tick(seconds):
+            frozen_time.tick(delta=seconds)
+
+        sleep_mock.side_effect = tick
+        yield sleep_mock

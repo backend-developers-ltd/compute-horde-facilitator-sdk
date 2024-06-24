@@ -1,23 +1,33 @@
 import abc
+import asyncio
+import logging
+import time
 import typing
 
 import httpx
 
-from compute_horde_facilitator_sdk._internal.signature import Signer, signature_to_headers
+from compute_horde_facilitator_sdk._internal.api_models import (
+    JobFeedback,
+    JobState,
+    is_in_progress,
+)
+from compute_horde_facilitator_sdk._internal.exceptions import (
+    FacilitatorClientTimeoutException,
+    SignatureRequiredException,
+)
+from compute_horde_facilitator_sdk._internal.signature import (
+    Signer,
+    signature_to_headers,
+)
 from compute_horde_facilitator_sdk._internal.typing import JSONDict, JSONType
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://facilitator.computehorde.io/api/v1/"
 
 
 HTTPClientType = typing.TypeVar("HTTPClientType", bound=httpx.Client | httpx.AsyncClient)
 HTTPResponseType = typing.TypeVar("HTTPResponseType", bound=httpx.Response | typing.Awaitable[httpx.Response])
-
-
-class JobStatus(typing.TypedDict, total=False):
-    uuid: str
-    status: str
-    stdout: str
-    output_download_url: str
 
 
 class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponseType]):
@@ -47,12 +57,21 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         request = self.client.build_request(method=method, url=url, json=json, params=params)
         if self.signer:
             signature = self.signer.signature_for_request(
-                request.method, str(request.url), headers=dict(request.headers), json=json
+                request.method,
+                str(request.url),
+                headers=dict(request.headers),
+                json=json,
             )
             signature_headers = signature_to_headers(signature)
             request.headers.update(signature_headers)
 
         return typing.cast(HTTPResponseType, self.client.send(request, follow_redirects=True))
+
+    def _require_signer(self):
+        if not self.signer:
+            raise SignatureRequiredException(
+                "This operation requires request signing. Initialize the client with a `signer` parameter."
+            )
 
     def _get_jobs(self, page: int = 1, page_size: int = 10) -> HTTPResponseType:
         return self._prepare_request("GET", "/jobs/", params={"page": page, "page_size": page_size})
@@ -81,6 +100,21 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         }
         return self._prepare_request("POST", "/job-docker/", json=data)
 
+    def _submit_feedback(
+        self,
+        job_uuid: str,
+        result_correctness: float,
+        expected_time: float | None = None,
+    ) -> HTTPResponseType:
+        self._require_signer()
+        data: JobFeedback = {
+            "job_uuid": job_uuid,
+            "result_correctness": result_correctness,
+        }
+        if expected_time is not None:
+            data["expected_time"] = expected_time
+        return self._prepare_request("POST", "/job-feedback/", json=typing.cast(JSONType, data))
+
 
 class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
     def _get_client(self) -> httpx.Client:
@@ -102,13 +136,13 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
     def get_jobs(self, page: int = 1, page_size: int = 10) -> JSONType:
         return self.handle_response(self._get_jobs(page, page_size))
 
-    def get_job(self, job_uuid: str) -> JobStatus:
+    def get_job(self, job_uuid: str) -> JobState:
         response = self.handle_response(self._get_job(job_uuid))
-        return typing.cast(JobStatus, response)
+        return typing.cast(JobState, response)
 
-    def create_raw_job(self, raw_script: str, input_url: str = "") -> JobStatus:
+    def create_raw_job(self, raw_script: str, input_url: str = "") -> JobState:
         response = self.handle_response(self._create_raw_job(raw_script, input_url))
-        return typing.cast(JobStatus, response)
+        return typing.cast(JobState, response)
 
     def create_docker_job(
         self,
@@ -117,7 +151,7 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
         input_url: str = "",
-    ) -> JobStatus:
+    ) -> JobState:
         response = self.handle_response(
             self._create_docker_job(
                 docker_image=docker_image,
@@ -127,7 +161,30 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
                 input_url=input_url,
             )
         )
-        return typing.cast(JobStatus, response)
+        return typing.cast(JobState, response)
+
+    def wait_for_job(self, job_uuid: str, timeout: float = 600) -> JobState:
+        """
+        Wait for a job to complete.
+
+        This will poll the facilitator for the job's state until it is no longer in progress.
+
+        :param job_uuid: The UUID of the job to wait for.
+        :param timeout: The maximum time in seconds to wait for the job to complete.
+        :return: The final state of the job.
+        """
+        start_time = time.time()
+
+        job = None
+        while not job or time.time() - start_time < timeout:
+            job = self.get_job(job_uuid)
+            if not is_in_progress(job["status"]):
+                return job
+            time.sleep(3)
+
+        raise FacilitatorClientTimeoutException(
+            f"Job {job_uuid} did not complete within {timeout} seconds, last status: {job and job['status']!r}"
+        )
 
 
 class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awaitable[httpx.Response]]):
@@ -151,13 +208,13 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
     async def get_jobs(self, page: int = 1, page_size: int = 10) -> JSONType:
         return await self.handle_response(self._get_jobs(page=page, page_size=page_size))
 
-    async def get_job(self, job_uuid: str) -> JobStatus:
+    async def get_job(self, job_uuid: str) -> JobState:
         response = await self.handle_response(self._get_job(job_uuid=job_uuid))
-        return typing.cast(JobStatus, response)
+        return typing.cast(JobState, response)
 
-    async def create_raw_job(self, raw_script: str, input_url: str = "") -> JobStatus:
+    async def create_raw_job(self, raw_script: str, input_url: str = "") -> JobState:
         response = await self.handle_response(self._create_raw_job(raw_script=raw_script, input_url=input_url))
-        return typing.cast(JobStatus, response)
+        return typing.cast(JobState, response)
 
     async def create_docker_job(
         self,
@@ -166,7 +223,7 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
         input_url: str = "",
-    ) -> JobStatus:
+    ) -> JobState:
         response = await self.handle_response(
             self._create_docker_job(
                 docker_image=docker_image,
@@ -176,4 +233,25 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
                 input_url=input_url,
             )
         )
-        return typing.cast(JobStatus, response)
+        return typing.cast(JobState, response)
+
+    async def wait_for_job(self, job_uuid: str, timeout: float = 600) -> JobState:
+        """
+        Wait for a job to complete.
+
+        This will poll the facilitator for the job's state until it is no longer in progress.
+
+        :param job_uuid: The UUID of the job to wait for.
+        :param timeout: The maximum time in seconds to wait for the job to complete.
+        :return: The final state of the job.
+        """
+        start_time = time.time()
+        job = None
+        while time.time() - start_time < timeout:
+            job = await self.get_job(job_uuid)
+            if not is_in_progress(job["status"]):
+                return job
+            await asyncio.sleep(3)
+        raise FacilitatorClientTimeoutException(
+            f"Job {job_uuid} did not complete within {timeout} seconds, last status: {job and job['status']!r}"
+        )

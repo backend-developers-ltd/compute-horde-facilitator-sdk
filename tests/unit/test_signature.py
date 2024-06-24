@@ -6,6 +6,7 @@ import freezegun
 import pytest
 from compute_horde_facilitator_sdk._internal.signature import (
     hash_message_signature,
+    signature_payload,
 )
 
 
@@ -99,3 +100,10 @@ def test_bittensor_wallet__sign_n_verify(apiver_module, bittensor_wallet, data):
 def test_signature_from_headers__not_found(apiver_module):
     with pytest.raises(apiver_module.SignatureNotFound):
         apiver_module.signature_from_headers({})
+
+
+def test_signature_payload():
+    assert signature_payload("get", "https://example.com/car", headers={"Date": "X"}, json={"a": 1}) == {
+        "action": "GET /car",
+        "json": {"a": 1},
+    }

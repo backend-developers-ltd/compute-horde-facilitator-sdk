@@ -2,7 +2,6 @@ import json
 
 import pytest
 import pytest_asyncio
-from compute_horde_facilitator_sdk._internal.signature import signature_payload
 
 
 @pytest.fixture
@@ -125,8 +124,75 @@ async def test_async_create_docker_job(async_facilitator_client, httpx_mock, ver
     assert response == expected_response
 
 
-def test_signature_payload():
-    assert signature_payload("get", "https://example.com/car", headers={"Date": "X"}, json={"a": 1}) == {
-        "action": "GET /car",
-        "json": {"a": 1},
-    }
+@pytest.fixture
+def job_uuid():
+    return "test-job-uuid"
+
+
+@pytest.fixture
+def sent_job_state(job_uuid):
+    return {"uuid": job_uuid, "status": "Sent"}
+
+
+@pytest.fixture
+def completed_job_state(job_uuid):
+    return {"uuid": job_uuid, "status": "Completed"}
+
+
+@pytest.mark.parametrize("final_status", ["Completed", "Failed", "Error", "Cancelled"])
+def test_wait_for_job__various_end_states(
+    final_status,
+    facilitator_client,
+    httpx_mock,
+    verified_httpx_mock,
+    sleep_mock,
+    job_uuid,
+    sent_job_state,
+    completed_job_state,
+):
+    expected_state = {**completed_job_state, "status": final_status}
+    httpx_mock.add_response(json=sent_job_state)
+    httpx_mock.add_response(json=expected_state)
+
+    assert facilitator_client.wait_for_job(job_uuid) == expected_state
+
+
+@pytest.mark.parametrize("final_status", ["Completed", "Failed", "Error", "Cancelled"])
+@pytest.mark.asyncio
+async def test_async_wait_for_job__various_end_states(
+    final_status,
+    async_facilitator_client,
+    httpx_mock,
+    verified_httpx_mock,
+    async_sleep_mock,
+    job_uuid,
+    sent_job_state,
+    completed_job_state,
+):
+    expected_state = {**completed_job_state, "status": final_status}
+    httpx_mock.add_response(json=sent_job_state)
+    httpx_mock.add_response(json=expected_state)
+
+    assert (await async_facilitator_client.wait_for_job(job_uuid)) == expected_state
+
+
+def test_wait_for_job__immediate_completion(
+    facilitator_client, httpx_mock, verified_httpx_mock, sleep_mock, completed_job_state
+):
+    job_uuid = "test-job-uuid"
+
+    httpx_mock.add_response(json=completed_job_state)
+
+    result = facilitator_client.wait_for_job(job_uuid)
+    assert result == completed_job_state
+
+
+def test_wait_for_job__timeout(
+    apiver_module, facilitator_client, httpx_mock, verified_httpx_mock, sleep_mock, job_uuid, sent_job_state
+):
+    httpx_mock.add_response(json=sent_job_state)
+
+    with pytest.raises(apiver_module.FacilitatorClientTimeoutException) as exc_info:
+        facilitator_client.wait_for_job(job_uuid, timeout=0)
+
+    assert f"Job {job_uuid} did not complete within 0 seconds" in str(exc_info.value)

@@ -1,3 +1,9 @@
+from ._internal.api_models import is_in_progress
+from ._internal.exceptions import (
+    FacilitatorClientException,
+    FacilitatorClientTimeoutException,
+    SignatureRequiredException,
+)
 from ._internal.sdk import AsyncFacilitatorClient, FacilitatorClient
 from ._internal.signature import (
     SIGNERS_REGISTRY,
@@ -24,9 +30,13 @@ __all__ = [
     "Signature",
     "SignatureException",
     "SignatureInvalidException",
+    "FacilitatorClientTimeoutException",
+    "FacilitatorClientException",
+    "SignatureRequiredException",
     "SignatureNotFound",
     "SignatureTimeoutException",
     "signature_from_headers",
-    "verify_signature",
+    "is_in_progress",
     "verify_request",
+    "verify_signature",
 ]
