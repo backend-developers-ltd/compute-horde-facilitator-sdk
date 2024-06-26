@@ -10,7 +10,7 @@ import re
 import time
 import typing
 
-from class_registry import ClassRegistry
+from class_registry import ClassRegistry, RegistryKeyError
 
 from compute_horde_facilitator_sdk._internal.typing import JSONType
 
@@ -45,7 +45,10 @@ def verify_signature(
     :return: None
     :raises SignatureInvalidException: if the signature is invalid
     """
-    verifier = VERIFIERS_REGISTRY.get(signature.signature_type)
+    try:
+        verifier = VERIFIERS_REGISTRY.get(signature.signature_type)
+    except RegistryKeyError as e:
+        raise SignatureInvalidException(f"Invalid signature type: {signature.signature_type!r}") from e
     verifier.verify(payload, signature, newer_than)
 
 
@@ -96,8 +99,12 @@ def verify_request(
         signature = signature_extractor(headers)
     except SignatureNotFound:
         return None
-    payload = signature_payload(method, url, headers=headers, json=json)
-    verify_signature(payload, signature, newer_than=newer_than)
+    try:
+        verifier = VERIFIERS_REGISTRY.get(signature.signature_type)
+    except RegistryKeyError as e:
+        raise SignatureInvalidException(f"Invalid signature type: {signature.signature_type!r}") from e
+    payload = verifier.payload_from_request(method, url, headers=headers, json=json)
+    verifier.verify(payload, signature, newer_than)
     return signature
 
 
@@ -160,9 +167,25 @@ def signature_payload(method: str, url: str, headers: dict[str, str], json: JSON
     }
 
 
-class Signer(abc.ABC):
+class SignatureScheme(abc.ABC):
     signature_type: typing.ClassVar[str]
 
+    def payload_from_request(
+        self,
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        json: JSONType | None = None,
+    ):
+        return signature_payload(
+            method=method,
+            url=url,
+            headers=headers,
+            json=json,
+        )
+
+
+class Signer(SignatureScheme):
     def sign(self, payload: JSONType | bytes) -> Signature:
         signature = Signature(
             signature_type=self.signature_type,
@@ -177,7 +200,7 @@ class Signer(abc.ABC):
     def signature_for_request(
         self, method: str, url: str, headers: dict[str, str], json: JSONType | None = None
     ) -> Signature:
-        return self.sign(signature_payload(method, url, headers=headers, json=json))
+        return self.sign(self.payload_from_request(method, url, headers=headers, json=json))
 
     @abc.abstractmethod
     def _sign(self, payload: bytes) -> bytes:
@@ -188,9 +211,7 @@ class Signer(abc.ABC):
         raise NotImplementedError
 
 
-class Verifier(abc.ABC):
-    signature_type: typing.ClassVar[str]
-
+class Verifier(SignatureScheme):
     def verify(
         self,
         payload: JSONType | bytes,
@@ -203,18 +224,6 @@ class Verifier(abc.ABC):
         if newer_than is not None:
             if newer_than > datetime.datetime.fromtimestamp(signature.timestamp_ns / 1_000_000_000):
                 raise SignatureTimeoutException("Signature is too old")
-
-    def verify_request(
-        self,
-        method: str,
-        url: str,
-        headers: dict[str, str],
-        json: JSONType | None = None,
-        newer_than: datetime.datetime | None = None,
-    ):
-        signature = signature_from_headers(headers)
-        payload = signature_payload(method, url, headers=headers, json=json)
-        self.verify(payload, signature, newer_than)
 
     @abc.abstractmethod
     def _verify(self, payload: bytes, signature: Signature) -> None:
@@ -229,14 +238,20 @@ def _require_bittensor():
     return bittensor
 
 
-@SIGNERS_REGISTRY.register
-class BittensorWalletSigner(Signer):
+class BittensorSignatureScheme:
     signature_type = "bittensor"
 
-    def __init__(self, wallet: bittensor.wallet | None = None):
+
+@SIGNERS_REGISTRY.register
+class BittensorWalletSigner(BittensorSignatureScheme, Signer):
+    def __init__(self, wallet: bittensor.wallet | bittensor.Keypair | None = None):
         bittensor = _require_bittensor()
 
-        self._keypair = (wallet or bittensor.wallet()).hotkey
+        if isinstance(wallet, bittensor.Keypair):
+            keypair = wallet
+        else:
+            keypair = (wallet or bittensor.wallet()).hotkey
+        self._keypair = keypair
 
     def _sign(self, payload: bytes) -> bytes:
         return self._keypair.sign(payload)
@@ -246,9 +261,7 @@ class BittensorWalletSigner(Signer):
 
 
 @VERIFIERS_REGISTRY.register
-class BittensorWalletVerifier(Verifier):
-    signature_type = "bittensor"
-
+class BittensorWalletVerifier(BittensorSignatureScheme, Verifier):
     def __init__(self, *args, **kwargs):
         self._bittensor = _require_bittensor()
 

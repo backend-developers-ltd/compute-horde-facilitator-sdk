@@ -27,11 +27,10 @@ class JobFeedback(TypedDict):
             The correctness of the job's result expressed as a float between 0.0 and 1.0.
             - 0.0 indicates 0% correctness (completely incorrect).
             - 1.0 indicates 100% correctness (completely correct).
-        - **expected_time** (*NotRequired[float]*):
+        - **expected_duration** (*NotRequired[float]*):
             An optional field indicating the expected time in seconds for the job to complete.
             This can highlight if the job's execution was slower than expected, suggesting performance issues.
     """
 
-    job_uuid: str
     result_correctness: Annotated[float, annotated_types.Interval(ge=0.0, le=1.0)]
-    expected_time: NotRequired[Annotated[float, annotated_types.Gt(0.0)] | None]
+    expected_duration: NotRequired[Annotated[float, annotated_types.Gt(0.0)] | None]

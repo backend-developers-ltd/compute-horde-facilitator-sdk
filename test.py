@@ -1,5 +1,4 @@
 import os
-import time
 
 from compute_horde_facilitator_sdk.v1 import BittensorWalletSigner, FacilitatorClient
 
