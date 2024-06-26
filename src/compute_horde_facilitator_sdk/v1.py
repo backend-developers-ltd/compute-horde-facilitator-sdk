@@ -16,6 +16,7 @@ from ._internal.signature import (
     SignatureNotFound,
     SignatureTimeoutException,
     signature_from_headers,
+    signature_to_headers,
     verify_request,
     verify_signature,
 )
@@ -36,6 +37,7 @@ __all__ = [
     "SignatureNotFound",
     "SignatureTimeoutException",
     "signature_from_headers",
+    "signature_to_headers",
     "is_in_progress",
     "verify_request",
     "verify_signature",
