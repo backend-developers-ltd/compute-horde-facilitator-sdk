@@ -100,20 +100,19 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         }
         return self._prepare_request("POST", "/job-docker/", json=data)
 
-    def _submit_feedback(
+    def _submit_job_feedback(
         self,
         job_uuid: str,
         result_correctness: float,
-        expected_time: float | None = None,
+        expected_duration: float | None = None,
     ) -> HTTPResponseType:
         self._require_signer()
         data: JobFeedback = {
-            "job_uuid": job_uuid,
             "result_correctness": result_correctness,
         }
-        if expected_time is not None:
-            data["expected_time"] = expected_time
-        return self._prepare_request("POST", "/job-feedback/", json=typing.cast(JSONType, data))
+        if expected_duration is not None:
+            data["expected_duration"] = expected_duration
+        return self._prepare_request("PUT", f"/jobs/{job_uuid}/feedback/", json=typing.cast(JSONType, data))
 
 
 class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
@@ -186,6 +185,34 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
             f"Job {job_uuid} did not complete within {timeout} seconds, last status: {job and job['status']!r}"
         )
 
+    def submit_job_feedback(
+        self,
+        job_uuid: str,
+        result_correctness: float,
+        expected_duration: float | None = None,
+    ) -> JobFeedback:
+        """
+        Submit feedback for a job.
+
+        This can be used to inform the facilitator about the correctness of the job's result.
+
+        :param job_uuid: The UUID of the job to submit feedback for.
+        :param result_correctness: The correctness of the job's result expressed as a float between 0.0 and 1.0.
+            - 0.0 indicates 0% correctness (completely incorrect).
+            - 1.0 indicates 100% correctness (completely correct).
+        :param expected_duration: An optional field indicating the expected time in seconds for the job to complete.
+            This can highlight if the job's execution was slower than expected, suggesting performance issues
+            on executor side.
+        """
+        response = self.handle_response(
+            self._submit_job_feedback(
+                job_uuid=job_uuid,
+                result_correctness=result_correctness,
+                expected_duration=expected_duration,
+            )
+        )
+        return typing.cast(JobFeedback, response)
+
 
 class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awaitable[httpx.Response]]):
     def _get_client(self) -> httpx.AsyncClient:
@@ -255,3 +282,31 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
         raise FacilitatorClientTimeoutException(
             f"Job {job_uuid} did not complete within {timeout} seconds, last status: {job and job['status']!r}"
         )
+
+    async def submit_job_feedback(
+        self,
+        job_uuid: str,
+        result_correctness: float,
+        expected_duration: float | None = None,
+    ) -> JobFeedback:
+        """
+        Submit feedback for a job.
+
+        This can be used to inform the facilitator about the correctness of the job's result.
+
+        :param job_uuid: The UUID of the job to submit feedback for.
+        :param result_correctness: The correctness of the job's result expressed as a float between 0.0 and 1.0.
+            - 0.0 indicates 0% correctness (completely incorrect).
+            - 1.0 indicates 100% correctness (completely correct).
+        :param expected_duration: An optional field indicating the expected time in seconds for the job to complete.
+            This can highlight if the job's execution was slower than expected, suggesting performance issues
+            on executor side.
+        """
+        response = await self.handle_response(
+            self._submit_job_feedback(
+                job_uuid=job_uuid,
+                result_correctness=result_correctness,
+                expected_duration=expected_duration,
+            )
+        )
+        return typing.cast(JobFeedback, response)

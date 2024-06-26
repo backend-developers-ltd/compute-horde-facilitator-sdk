@@ -196,3 +196,11 @@ def test_wait_for_job__timeout(
         facilitator_client.wait_for_job(job_uuid, timeout=0)
 
     assert f"Job {job_uuid} did not complete within 0 seconds" in str(exc_info.value)
+
+
+def test_submit_job_feedback(facilitator_client, httpx_mock, verified_httpx_mock):
+    job_uuid = "abc123"
+    feedback = {"result_correctness": 0.9, "expected_duration": 10.0}
+    httpx_mock.add_response(method="PUT", url=f"https://example.com/jobs/{job_uuid}/feedback/", json=feedback)
+    response = facilitator_client.submit_job_feedback(job_uuid, feedback)
+    assert response == feedback
