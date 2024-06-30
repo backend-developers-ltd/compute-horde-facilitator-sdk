@@ -9,6 +9,8 @@ import httpx
 from compute_horde_facilitator_sdk._internal.api_models import (
     JobFeedback,
     JobState,
+    SingleFileUpload,
+    Volume,
     is_in_progress,
 )
 from compute_horde_facilitator_sdk._internal.exceptions import (
@@ -19,7 +21,7 @@ from compute_horde_facilitator_sdk._internal.signature import (
     Signer,
     signature_to_headers,
 )
-from compute_horde_facilitator_sdk._internal.typing import JSONDict, JSONType
+from compute_horde_facilitator_sdk._internal.typing import JSONArray, JSONDict, JSONType
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +81,18 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
     def _get_job(self, job_uuid: str) -> HTTPResponseType:
         return self._prepare_request("GET", f"/jobs/{job_uuid}/")
 
-    def _create_raw_job(self, raw_script: str, input_url: str = "") -> HTTPResponseType:
+    def _create_raw_job(
+        self,
+        raw_script: str,
+        input_url: str = "",
+        uploads: list[SingleFileUpload] | None = None,
+        volumes: list[Volume] | None = None,
+    ) -> HTTPResponseType:
         data: JSONDict = {"raw_script": raw_script, "input_url": input_url}
+        if uploads is not None:
+            data["uploads"] = typing.cast(JSONArray, uploads)
+        if volumes is not None:
+            data["volumes"] = typing.cast(JSONArray, volumes)
         return self._prepare_request("POST", "/job-raw/", json=data)
 
     def _create_docker_job(
@@ -90,6 +102,8 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
         input_url: str = "",
+        uploads: list[SingleFileUpload] | None = None,
+        volumes: list[Volume] | None = None,
     ) -> HTTPResponseType:
         data: JSONDict = {
             "docker_image": docker_image,
@@ -98,6 +112,10 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
             "use_gpu": use_gpu,
             "input_url": input_url,
         }
+        if uploads is not None:
+            data["uploads"] = typing.cast(JSONArray, uploads)
+        if volumes is not None:
+            data["volumes"] = typing.cast(JSONArray, volumes)
         return self._prepare_request("POST", "/job-docker/", json=data)
 
     def _submit_job_feedback(
@@ -139,8 +157,21 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
         response = self.handle_response(self._get_job(job_uuid))
         return typing.cast(JobState, response)
 
-    def create_raw_job(self, raw_script: str, input_url: str = "") -> JobState:
-        response = self.handle_response(self._create_raw_job(raw_script, input_url))
+    def create_raw_job(
+        self,
+        raw_script: str,
+        input_url: str = "",
+        uploads: list[SingleFileUpload] | None = None,
+        volumes: list[Volume] | None = None,
+    ) -> JobState:
+        response = self.handle_response(
+            self._create_raw_job(
+                raw_script,
+                input_url=input_url,
+                uploads=uploads,
+                volumes=volumes,
+            )
+        )
         return typing.cast(JobState, response)
 
     def create_docker_job(
@@ -150,6 +181,8 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
         input_url: str = "",
+        uploads: list[SingleFileUpload] | None = None,
+        volumes: list[Volume] | None = None,
     ) -> JobState:
         response = self.handle_response(
             self._create_docker_job(
@@ -158,6 +191,8 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
                 env=env,
                 use_gpu=use_gpu,
                 input_url=input_url,
+                uploads=uploads,
+                volumes=volumes,
             )
         )
         return typing.cast(JobState, response)
@@ -239,8 +274,21 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
         response = await self.handle_response(self._get_job(job_uuid=job_uuid))
         return typing.cast(JobState, response)
 
-    async def create_raw_job(self, raw_script: str, input_url: str = "") -> JobState:
-        response = await self.handle_response(self._create_raw_job(raw_script=raw_script, input_url=input_url))
+    async def create_raw_job(
+        self,
+        raw_script: str,
+        input_url: str = "",
+        uploads: list[SingleFileUpload] | None = None,
+        volumes: list[Volume] | None = None,
+    ) -> JobState:
+        response = await self.handle_response(
+            self._create_raw_job(
+                raw_script=raw_script,
+                input_url=input_url,
+                uploads=uploads,
+                volumes=volumes,
+            )
+        )
         return typing.cast(JobState, response)
 
     async def create_docker_job(
@@ -250,6 +298,8 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
         input_url: str = "",
+        uploads: list[SingleFileUpload] | None = None,
+        volumes: list[Volume] | None = None,
     ) -> JobState:
         response = await self.handle_response(
             self._create_docker_job(
@@ -258,6 +308,8 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
                 env=env,
                 use_gpu=use_gpu,
                 input_url=input_url,
+                uploads=uploads,
+                volumes=volumes,
             )
         )
         return typing.cast(JobState, response)
