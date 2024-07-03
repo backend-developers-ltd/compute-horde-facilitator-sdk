@@ -2,6 +2,7 @@ import json
 
 import pytest
 import pytest_asyncio
+from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS  # type: ignore
 
 
 @pytest.fixture
@@ -73,6 +74,7 @@ def test_create_raw_job(facilitator_client, httpx_mock, verified_httpx_mock):
 
 
 def test_create_docker_job(facilitator_client, httpx_mock, verified_httpx_mock):
+    executor_class = DEFAULT_EXECUTOR_CLASS
     docker_image = "my-image"
     args = "--arg1 value1"
     env = {"ENV_VAR": "value"}
@@ -80,7 +82,7 @@ def test_create_docker_job(facilitator_client, httpx_mock, verified_httpx_mock):
     input_url = "https://example.com/input"
     expected_response = {"id": 1, "status": "queued"}
     httpx_mock.add_response(json=expected_response)
-    response = facilitator_client.create_docker_job(docker_image, args, env, use_gpu, input_url)
+    response = facilitator_client.create_docker_job(docker_image, executor_class, args, env, use_gpu, input_url)
     assert response == expected_response
 
 
@@ -113,6 +115,7 @@ async def test_async_create_raw_job(async_facilitator_client, httpx_mock, verifi
 
 @pytest.mark.asyncio
 async def test_async_create_docker_job(async_facilitator_client, httpx_mock, verified_httpx_mock):
+    executor_class = DEFAULT_EXECUTOR_CLASS
     docker_image = "my-image"
     args = "--arg1 value1"
     env = {"ENV_VAR": "value"}
@@ -120,7 +123,9 @@ async def test_async_create_docker_job(async_facilitator_client, httpx_mock, ver
     input_url = "https://example.com/input"
     expected_response = {"id": 1, "status": "queued"}
     httpx_mock.add_response(json=expected_response)
-    response = await async_facilitator_client.create_docker_job(docker_image, args, env, use_gpu, input_url)
+    response = await async_facilitator_client.create_docker_job(
+        docker_image, executor_class, args, env, use_gpu, input_url
+    )
     assert response == expected_response
 
 

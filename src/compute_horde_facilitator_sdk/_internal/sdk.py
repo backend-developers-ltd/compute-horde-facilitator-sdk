@@ -5,6 +5,7 @@ import time
 import typing
 
 import httpx
+from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS, ExecutorClass  # type: ignore
 
 from compute_horde_facilitator_sdk._internal.api_models import (
     JobFeedback,
@@ -86,12 +87,14 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
     def _create_docker_job(
         self,
         docker_image: str,
+        executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS,
         args: str = "",
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
         input_url: str = "",
     ) -> HTTPResponseType:
         data: JSONDict = {
+            "executor_class": executor_class,
             "docker_image": docker_image,
             "args": args,
             "env": env or {},  # type: ignore # mypy doesn't acknowledge dict[str, str] | None as subtype of JSONDict
@@ -146,6 +149,7 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
     def create_docker_job(
         self,
         docker_image: str,
+        executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS,
         args: str = "",
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
@@ -154,6 +158,7 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
         response = self.handle_response(
             self._create_docker_job(
                 docker_image=docker_image,
+                executor_class=executor_class,
                 args=args,
                 env=env,
                 use_gpu=use_gpu,
@@ -246,6 +251,7 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
     async def create_docker_job(
         self,
         docker_image: str,
+        executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS,
         args: str = "",
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
@@ -254,6 +260,7 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
         response = await self.handle_response(
             self._create_docker_job(
                 docker_image=docker_image,
+                executor_class=executor_class,
                 args=args,
                 env=env,
                 use_gpu=use_gpu,
