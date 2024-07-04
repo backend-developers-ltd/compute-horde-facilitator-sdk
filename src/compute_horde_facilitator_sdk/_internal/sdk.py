@@ -5,6 +5,7 @@ import time
 import typing
 
 import httpx
+from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS, ExecutorClass  # type: ignore
 
 from compute_horde_facilitator_sdk._internal.api_models import (
     JobFeedback,
@@ -90,8 +91,10 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
         input_url: str = "",
+        executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS,
     ) -> HTTPResponseType:
         data: JSONDict = {
+            "executor_class": executor_class,
             "docker_image": docker_image,
             "args": args,
             "env": env or {},  # type: ignore # mypy doesn't acknowledge dict[str, str] | None as subtype of JSONDict
@@ -150,9 +153,11 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
         input_url: str = "",
+        executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS,
     ) -> JobState:
         response = self.handle_response(
             self._create_docker_job(
+                executor_class=executor_class,
                 docker_image=docker_image,
                 args=args,
                 env=env,
@@ -250,9 +255,11 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
         env: dict[str, str] | None = None,
         use_gpu: bool = False,
         input_url: str = "",
+        executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS,
     ) -> JobState:
         response = await self.handle_response(
             self._create_docker_job(
+                executor_class=executor_class,
                 docker_image=docker_image,
                 args=args,
                 env=env,

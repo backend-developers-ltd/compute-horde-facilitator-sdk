@@ -1,5 +1,6 @@
 import os
 
+from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS  # type: ignore
 from compute_horde_facilitator_sdk.v1 import BittensorWalletSigner, FacilitatorClient
 
 signer = None
@@ -18,6 +19,7 @@ compute_horde = FacilitatorClient(
 )
 
 job = compute_horde.create_docker_job(
+    executor_class=DEFAULT_EXECUTOR_CLASS,
     docker_image="backenddevelopersltd/gen_caption_v2",
     # The zip file will be extracted within the Docker container to the /volume directory
     input_url="https://raw.githubusercontent.com/backend-developers-ltd/ComputeHorde-examples/master/input_shapes.zip",
