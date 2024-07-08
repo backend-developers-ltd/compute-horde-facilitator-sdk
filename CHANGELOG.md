@@ -8,3 +8,17 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
+
+## [0.0.4](https://github.com/backend-developers-ltd/compute-horde-facilitator-sdk/releases/tag/v0.0.4) - 2024-07-08
+
+
+### Added
+
+- Add `submit_job_feedback` method to FacilitatorClient.
+- Add `uploads` and `volumes` support in job creation.
+- Add `wait_for_job` method to FacilitatorClient.
+- Add support for signing job requests with Bittensor wallet.
+
+### Infrastructure
+
+- Link repository to `cookiecutter-rt-pkg` template for more robust CI and easier updates.
