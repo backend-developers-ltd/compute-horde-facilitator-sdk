@@ -1,3 +1,4 @@
+import enum
 from typing import Annotated, Literal, NotRequired
 
 import annotated_types
@@ -34,3 +35,52 @@ class JobFeedback(TypedDict):
 
     result_correctness: Annotated[float, annotated_types.Interval(ge=0.0, le=1.0)]
     expected_duration: NotRequired[Annotated[float, annotated_types.Gt(0.0)] | None]
+
+
+class OutputUploadType(str, enum.Enum):
+    single_file_post = "single_file_post"
+    single_file_put = "single_file_put"
+
+    def __str__(self):
+        return str.__str__(self)
+
+
+class SingleFilePostUpload(TypedDict):
+    output_upload_type: Literal[OutputUploadType.single_file_post]
+    url: str
+    form_fields: dict[str, str] | None
+    relative_path: str
+    signed_headers: dict[str, str] | None
+
+
+class SingleFilePutUpload(TypedDict):
+    output_upload_type: Literal[OutputUploadType.single_file_put]
+    url: str
+    relative_path: str
+    signed_headers: dict[str, str] | None
+
+
+SingleFileUpload = SingleFilePostUpload | SingleFilePutUpload
+
+
+class VolumeType(str, enum.Enum):
+    zip_url = "zip_url"
+    single_file = "single_file"
+
+    def __str__(self):
+        return str.__str__(self)
+
+
+class ZipUrlVolume(TypedDict):
+    volume_type: Literal[VolumeType.zip_url]
+    contents: str
+    relative_path: str | None
+
+
+class SingleFileVolume(TypedDict):
+    volume_type: Literal[VolumeType.single_file]
+    url: str
+    relative_path: str
+
+
+Volume = ZipUrlVolume | SingleFileVolume

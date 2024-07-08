@@ -3,6 +3,13 @@ import json
 import pytest
 import pytest_asyncio
 from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS  # type: ignore
+from compute_horde_facilitator_sdk._internal.api_models import (
+    OutputUploadType,
+    SingleFilePostUpload,
+    SingleFileVolume,
+    VolumeType,
+    ZipUrlVolume,
+)
 
 
 @pytest.fixture
@@ -49,6 +56,33 @@ async def async_facilitator_client(apiver_module, base_url, token, signer):
         yield client
 
 
+@pytest.fixture
+def output_uploads():
+    return [
+        SingleFilePostUpload(
+            output_upload_type=OutputUploadType.single_file_put,
+            url="https://example.com/upload?signature=eedd1234",
+            relative_path="output.txt",
+            signed_headers={
+                "content-type": "application/text",
+                "content-disposition": 'attachment; filename="filename.jpg"',
+            },
+        )
+    ]
+
+
+@pytest.fixture
+def volumes():
+    return [
+        ZipUrlVolume(volume_type=VolumeType.zip_url, contents="https://example.com/input.zip", relative_path="input"),
+        SingleFileVolume(
+            volume_type=VolumeType.single_file,
+            url="https://example.com/example.jpg",
+            relative_path="examples/example.jpg",
+        ),
+    ]
+
+
 def test_get_jobs(facilitator_client, httpx_mock, verified_httpx_mock):
     expected_response = {"results": [{"id": 1, "name": "Job 1"}, {"id": 2, "name": "Job 2"}]}
     httpx_mock.add_response(json=expected_response)
@@ -72,19 +106,90 @@ def test_create_raw_job(facilitator_client, httpx_mock, verified_httpx_mock):
     response = facilitator_client.create_raw_job(raw_script, input_url)
     assert response == expected_response
 
+    request = httpx_mock.get_request()
+    payload = json.loads(request.content)
+    assert payload == dict(
+        raw_script=raw_script,
+        input_url=input_url,
+    )
+
 
 def test_create_docker_job(facilitator_client, httpx_mock, verified_httpx_mock):
+    docker_image = "my-image"
+    args = "--arg1 value1"
+    env = {"ENV_VAR": "value"}
+    use_gpu = True
+    input_url = "https://example.com/input"
     expected_response = {"id": 1, "status": "queued"}
     httpx_mock.add_response(json=expected_response)
     response = facilitator_client.create_docker_job(
         executor_class=DEFAULT_EXECUTOR_CLASS,
-        docker_image="my-image",
-        args="--arg1 value1",
-        env={"ENV_VAR": "value"},
-        use_gpu=True,
+        docker_image=docker_image,
+        args=args,
+        env=env,
+        use_gpu=use_gpu,
         input_url="https://example.com/input",
     )
     assert response == expected_response
+
+    request = httpx_mock.get_request()
+    payload = json.loads(request.content)
+    assert payload == dict(
+        docker_image=docker_image,
+        args=args,
+        env=env,
+        use_gpu=use_gpu,
+        input_url=input_url,
+        executor_class=DEFAULT_EXECUTOR_CLASS,
+    )
+
+
+def test_create_raw_job_uploads_volumes(facilitator_client, httpx_mock, verified_httpx_mock, output_uploads, volumes):
+    raw_script = "echo 'Hello, World!'"
+    input_url = "https://example.com/input"
+    expected_response = {"id": 1, "status": "queued"}
+    httpx_mock.add_response(json=expected_response)
+    response = facilitator_client.create_raw_job(raw_script, input_url, uploads=output_uploads, volumes=volumes)
+    assert response == expected_response
+
+    request = httpx_mock.get_request()
+    payload = json.loads(request.content)
+    assert payload == dict(
+        raw_script=raw_script,
+        input_url=input_url,
+        uploads=output_uploads,
+        volumes=volumes,
+    )
+
+
+def test_create_docker_job_uploads_volumes(
+    facilitator_client, httpx_mock, verified_httpx_mock, output_uploads, volumes
+):
+    docker_image = "my-image"
+    args = "--arg1 value1"
+    env = {"ENV_VAR": "value"}
+    use_gpu = True
+    input_url = "https://example.com/input"
+    expected_response = {"id": 1, "status": "queued"}
+    httpx_mock.add_response(json=expected_response)
+
+    response = facilitator_client.create_docker_job(
+        docker_image, args, env, use_gpu, input_url, uploads=output_uploads, volumes=volumes
+    )
+    assert response == expected_response
+
+    request = httpx_mock.get_request()
+    payload = json.loads(request.content)
+    assert payload == dict(
+        docker_image=docker_image,
+        args=args,
+        env=env,
+        use_gpu=use_gpu,
+        input_url=input_url,
+        uploads=output_uploads,
+        volumes=volumes,
+        executor_class=DEFAULT_EXECUTOR_CLASS,
+    )
 
 
 @pytest.mark.asyncio
@@ -113,6 +218,13 @@ async def test_async_create_raw_job(async_facilitator_client, httpx_mock, verifi
     response = await async_facilitator_client.create_raw_job(raw_script, input_url)
     assert response == expected_response
 
+    request = httpx_mock.get_request()
+    payload = json.loads(request.content)
+    assert payload == dict(
+        raw_script=raw_script,
+        input_url=input_url,
+    )
+
 
 @pytest.mark.asyncio
 async def test_async_create_docker_job(async_facilitator_client, httpx_mock, verified_httpx_mock):
@@ -128,6 +240,70 @@ async def test_async_create_docker_job(async_facilitator_client, httpx_mock, ver
         docker_image, args, env, use_gpu, input_url, executor_class
     )
     assert response == expected_response
+
+    request = httpx_mock.get_request()
+    payload = json.loads(request.content)
+    assert payload == dict(
+        docker_image=docker_image,
+        args=args,
+        env=env,
+        use_gpu=use_gpu,
+        input_url=input_url,
+        executor_class=DEFAULT_EXECUTOR_CLASS,
+    )
+
+
+@pytest.mark.asyncio
+async def test_async_create_raw_job_uploads_volumes(
+    async_facilitator_client, httpx_mock, verified_httpx_mock, output_uploads, volumes
+):
+    raw_script = "echo 'Hello, World!'"
+    input_url = "https://example.com/input"
+    expected_response = {"id": 1, "status": "queued"}
+    httpx_mock.add_response(json=expected_response)
+    response = await async_facilitator_client.create_raw_job(
+        raw_script, input_url, uploads=output_uploads, volumes=volumes
+    )
+    assert response == expected_response
+
+    request = httpx_mock.get_request()
+    payload = json.loads(request.content)
+    assert payload == dict(
+        raw_script=raw_script,
+        input_url=input_url,
+        uploads=output_uploads,
+        volumes=volumes,
+    )
+
+
+@pytest.mark.asyncio
+async def test_async_create_docker_job_uploads_volumes(
+    async_facilitator_client, httpx_mock, verified_httpx_mock, output_uploads, volumes
+):
+    docker_image = "my-image"
+    args = "--arg1 value1"
+    env = {"ENV_VAR": "value"}
+    use_gpu = True
+    input_url = "https://example.com/input"
+    expected_response = {"id": 1, "status": "queued"}
+    httpx_mock.add_response(json=expected_response)
+    response = await async_facilitator_client.create_docker_job(
+        docker_image, args, env, use_gpu, input_url, uploads=output_uploads, volumes=volumes
+    )
+    assert response == expected_response
+
+    request = httpx_mock.get_request()
+    payload = json.loads(request.content)
+    assert payload == dict(
+        docker_image=docker_image,
+        args=args,
+        env=env,
+        use_gpu=use_gpu,
+        input_url=input_url,
+        uploads=output_uploads,
+        volumes=volumes,
+        executor_class=DEFAULT_EXECUTOR_CLASS,
+    )
 
 
 @pytest.fixture
