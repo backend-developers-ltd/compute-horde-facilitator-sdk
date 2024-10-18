@@ -18,8 +18,8 @@ if typing.TYPE_CHECKING:
     import bittensor
 
 
-SIGNERS_REGISTRY = ClassRegistry("signature_type")
-VERIFIERS_REGISTRY = ClassRegistry("signature_type")
+SIGNERS_REGISTRY: ClassRegistry = ClassRegistry("signature_type")
+VERIFIERS_REGISTRY: ClassRegistry = ClassRegistry("signature_type")
 
 
 @dataclasses.dataclass

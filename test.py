@@ -1,6 +1,7 @@
 import os
 
 from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS  # type: ignore
+
 from compute_horde_facilitator_sdk.v1 import BittensorWalletSigner, FacilitatorClient
 
 signer = None
