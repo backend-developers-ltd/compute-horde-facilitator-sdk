@@ -13,4 +13,6 @@ media/
 .terraform.lock.hcl
 .terraform/
 .nox/
+.mypy_cache/
+.ruff_cache/
 __pycache__
