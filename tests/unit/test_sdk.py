@@ -130,6 +130,7 @@ def test_create_docker_job(facilitator_client, httpx_mock, verified_httpx_mock):
         env=env,
         use_gpu=use_gpu,
         input_url="https://example.com/input",
+        target_validator_hotkey="5Hotkey",
     )
     assert response == expected_response
 
@@ -142,6 +143,7 @@ def test_create_docker_job(facilitator_client, httpx_mock, verified_httpx_mock):
         use_gpu=use_gpu,
         input_url=input_url,
         executor_class=DEFAULT_EXECUTOR_CLASS,
+        target_validator_hotkey="5Hotkey",
     )
 
 
