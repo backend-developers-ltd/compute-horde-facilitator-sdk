@@ -6,6 +6,7 @@ import typing
 
 import httpx
 from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS, ExecutorClass  # type: ignore
+from compute_horde.signature import Signer, signature_to_headers
 
 from compute_horde_facilitator_sdk._internal.api_models import (
     JobFeedback,
@@ -17,10 +18,6 @@ from compute_horde_facilitator_sdk._internal.api_models import (
 from compute_horde_facilitator_sdk._internal.exceptions import (
     FacilitatorClientTimeoutException,
     SignatureRequiredException,
-)
-from compute_horde_facilitator_sdk._internal.signature import (
-    Signer,
-    signature_to_headers,
 )
 from compute_horde_facilitator_sdk._internal.typing import JSONArray, JSONDict, JSONType
 
