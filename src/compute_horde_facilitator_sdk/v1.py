@@ -1,11 +1,4 @@
-from ._internal.api_models import is_in_progress
-from ._internal.exceptions import (
-    FacilitatorClientException,
-    FacilitatorClientTimeoutException,
-    SignatureRequiredException,
-)
-from ._internal.sdk import AsyncFacilitatorClient, FacilitatorClient
-from ._internal.signature import (
+from compute_horde.signature import (
     SIGNERS_REGISTRY,
     VERIFIERS_REGISTRY,
     BittensorWalletSigner,
@@ -20,6 +13,14 @@ from ._internal.signature import (
     verify_request,
     verify_signature,
 )
+
+from ._internal.api_models import is_in_progress
+from ._internal.exceptions import (
+    FacilitatorClientException,
+    FacilitatorClientTimeoutException,
+    SignatureRequiredException,
+)
+from ._internal.sdk import AsyncFacilitatorClient, FacilitatorClient
 
 __all__ = [
     "SIGNERS_REGISTRY",

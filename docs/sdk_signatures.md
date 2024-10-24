@@ -10,7 +10,7 @@ the client will sign every request before sending it to the server.
 ```python
 import json
 
-from compute_horde_facilitator_sdk.v1 import verify_request
+from compute_horde.signature import verify_request
 
 signature = verify_request(
     request.method,
