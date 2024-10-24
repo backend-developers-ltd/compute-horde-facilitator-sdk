@@ -106,8 +106,10 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS,
         uploads: list[SingleFileUpload] | None = None,
         volumes: list[Volume] | None = None,
+        target_validator_hotkey: str | None = None,
     ) -> HTTPResponseType:
         data: JSONDict = {
+            "target_validator_hotkey": target_validator_hotkey,
             "executor_class": executor_class,
             "docker_image": docker_image,
             "args": args,
@@ -187,6 +189,7 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
         executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS,
         uploads: list[SingleFileUpload] | None = None,
         volumes: list[Volume] | None = None,
+        target_validator_hotkey: str | None = None,
     ) -> JobState:
         response = self.handle_response(
             self._create_docker_job(
@@ -198,6 +201,7 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
                 input_url=input_url,
                 uploads=uploads,
                 volumes=volumes,
+                target_validator_hotkey=target_validator_hotkey,
             )
         )
         return typing.cast(JobState, response)
@@ -306,6 +310,7 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
         executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS,
         uploads: list[SingleFileUpload] | None = None,
         volumes: list[Volume] | None = None,
+        target_validator_hotkey: str | None = None,
     ) -> JobState:
         response = await self.handle_response(
             self._create_docker_job(
@@ -317,6 +322,7 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
                 input_url=input_url,
                 uploads=uploads,
                 volumes=volumes,
+                target_validator_hotkey=target_validator_hotkey,
             )
         )
         return typing.cast(JobState, response)
