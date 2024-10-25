@@ -30,6 +30,10 @@ HTTPClientType = typing.TypeVar("HTTPClientType", bound=httpx.Client | httpx.Asy
 HTTPResponseType = typing.TypeVar("HTTPResponseType", bound=httpx.Response | typing.Awaitable[httpx.Response])
 
 
+def to_json_array(data) -> JSONArray:
+    return typing.cast(JSONArray, [x.model_dump() for x in data])
+
+
 class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponseType]):
     def __init__(
         self,
@@ -88,9 +92,9 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
     ) -> HTTPResponseType:
         data: JSONDict = {"raw_script": raw_script, "input_url": input_url}
         if uploads is not None:
-            data["uploads"] = typing.cast(JSONArray, uploads)
+            data["uploads"] = to_json_array(uploads)
         if volumes is not None:
-            data["volumes"] = typing.cast(JSONArray, volumes)
+            data["volumes"] = to_json_array(volumes)
         return self._prepare_request("POST", "/job-raw/", json=data)
 
     def _create_docker_job(
@@ -115,9 +119,9 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
             "input_url": input_url,
         }
         if uploads is not None:
-            data["uploads"] = typing.cast(JSONArray, uploads)
+            data["uploads"] = to_json_array(uploads)
         if volumes is not None:
-            data["volumes"] = typing.cast(JSONArray, volumes)
+            data["volumes"] = to_json_array(volumes)
         return self._prepare_request("POST", "/job-docker/", json=data)
 
     def _submit_job_feedback(
