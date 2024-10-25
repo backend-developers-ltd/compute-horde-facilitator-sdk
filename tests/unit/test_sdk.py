@@ -1,16 +1,39 @@
 import json
 
+import pydantic
 import pytest
 import pytest_asyncio
-from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS  # type: ignore
-
-from compute_horde_facilitator_sdk._internal.api_models import (
+from compute_horde.base.output_upload import (
     OutputUploadType,
     SingleFilePostUpload,
+)
+from compute_horde.base.volume import (
     SingleFileVolume,
     VolumeType,
     ZipUrlVolume,
 )
+from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS, ExecutorClass  # type: ignore
+
+from compute_horde_facilitator_sdk._internal.api_models import Volume
+
+
+class RawJobPayload(pydantic.BaseModel):
+    raw_script: str
+    input_url: str = ""
+    uploads: list[SingleFilePostUpload] | None = None
+    volumes: list[Volume] | None = None
+
+
+class DockerJobPayload(pydantic.BaseModel):
+    docker_image: str
+    args: str = ""
+    env: dict[str, str] | None = None
+    use_gpu: bool = False
+    input_url: str = ""
+    executor_class: ExecutorClass = DEFAULT_EXECUTOR_CLASS
+    uploads: list[SingleFilePostUpload] | None = None
+    volumes: list[Volume] | None = None
+    target_validator_hotkey: str | None = None
 
 
 @pytest.fixture
@@ -61,7 +84,7 @@ async def async_facilitator_client(apiver_module, base_url, token, signer):
 def output_uploads():
     return [
         SingleFilePostUpload(
-            output_upload_type=OutputUploadType.single_file_put,
+            output_upload_type=str(OutputUploadType.single_file_post),
             url="https://example.com/upload?signature=eedd1234",
             relative_path="output.txt",
             signed_headers={
@@ -108,8 +131,8 @@ def test_create_raw_job(facilitator_client, httpx_mock, verified_httpx_mock):
     assert response == expected_response
 
     request = httpx_mock.get_request()
-    payload = json.loads(request.content)
-    assert payload == dict(
+    payload = RawJobPayload.model_validate_json(request.content)
+    assert payload == RawJobPayload(
         raw_script=raw_script,
         input_url=input_url,
     )
@@ -135,8 +158,8 @@ def test_create_docker_job(facilitator_client, httpx_mock, verified_httpx_mock):
     assert response == expected_response
 
     request = httpx_mock.get_request()
-    payload = json.loads(request.content)
-    assert payload == dict(
+    payload = DockerJobPayload.model_validate_json(request.content)
+    assert payload == DockerJobPayload(
         docker_image=docker_image,
         args=args,
         env=env,
@@ -156,8 +179,8 @@ def test_create_raw_job_uploads_volumes(facilitator_client, httpx_mock, verified
     assert response == expected_response
 
     request = httpx_mock.get_request()
-    payload = json.loads(request.content)
-    assert payload == dict(
+    payload = RawJobPayload.model_validate_json(request.content)
+    assert payload == RawJobPayload(
         raw_script=raw_script,
         input_url=input_url,
         uploads=output_uploads,
@@ -183,7 +206,8 @@ def test_create_docker_job_uploads_volumes(
 
     request = httpx_mock.get_request()
     payload = json.loads(request.content)
-    assert payload == dict(
+    payload = DockerJobPayload.model_validate_json(request.content)
+    assert payload == DockerJobPayload(
         docker_image=docker_image,
         args=args,
         env=env,
@@ -224,7 +248,8 @@ async def test_async_create_raw_job(async_facilitator_client, httpx_mock, verifi
 
     request = httpx_mock.get_request()
     payload = json.loads(request.content)
-    assert payload == dict(
+    payload = RawJobPayload.model_validate_json(request.content)
+    assert payload == RawJobPayload(
         raw_script=raw_script,
         input_url=input_url,
     )
@@ -247,7 +272,8 @@ async def test_async_create_docker_job(async_facilitator_client, httpx_mock, ver
 
     request = httpx_mock.get_request()
     payload = json.loads(request.content)
-    assert payload == dict(
+    payload = DockerJobPayload.model_validate_json(request.content)
+    assert payload == DockerJobPayload(
         docker_image=docker_image,
         args=args,
         env=env,
@@ -273,7 +299,8 @@ async def test_async_create_raw_job_uploads_volumes(
 
     request = httpx_mock.get_request()
     payload = json.loads(request.content)
-    assert payload == dict(
+    payload = RawJobPayload.model_validate_json(request.content)
+    assert payload == RawJobPayload(
         raw_script=raw_script,
         input_url=input_url,
         uploads=output_uploads,
@@ -299,7 +326,8 @@ async def test_async_create_docker_job_uploads_volumes(
 
     request = httpx_mock.get_request()
     payload = json.loads(request.content)
-    assert payload == dict(
+    payload = DockerJobPayload.model_validate_json(request.content)
+    assert payload == DockerJobPayload(
         docker_image=docker_image,
         args=args,
         env=env,
