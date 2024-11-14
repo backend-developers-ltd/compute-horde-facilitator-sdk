@@ -1,12 +1,13 @@
 import abc
 import asyncio
-import logging
 import time
 import typing
 
 import httpx
 from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS, ExecutorClass  # type: ignore
+from compute_horde.fv_protocol.facilitator_requests import SignedFields
 from compute_horde.signature import Signer, signature_to_headers
+from pydantic import JsonValue
 
 from compute_horde_facilitator_sdk._internal.api_models import (
     JobFeedback,
@@ -19,9 +20,6 @@ from compute_horde_facilitator_sdk._internal.exceptions import (
     FacilitatorClientTimeoutException,
     SignatureRequiredException,
 )
-from compute_horde_facilitator_sdk._internal.typing import JSONArray, JSONDict, JSONType
-
-logger = logging.getLogger(__name__)
 
 BASE_URL = "https://facilitator.computehorde.io/api/v1/"
 
@@ -30,8 +28,8 @@ HTTPClientType = typing.TypeVar("HTTPClientType", bound=httpx.Client | httpx.Asy
 HTTPResponseType = typing.TypeVar("HTTPResponseType", bound=httpx.Response | typing.Awaitable[httpx.Response])
 
 
-def to_json_array(data) -> JSONArray:
-    return typing.cast(JSONArray, [x.model_dump() for x in data])
+def to_json_array(data) -> list[JsonValue]:
+    return typing.cast(list[JsonValue], [x.model_dump() for x in data])
 
 
 class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponseType]):
@@ -55,17 +53,14 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         method: str,
         url: str,
         *,
-        json: JSONType | None = None,
+        json: JsonValue | None = None,
         params: dict[str, str | int] | None = None,
     ) -> HTTPResponseType:
         request = self.client.build_request(method=method, url=url, json=json, params=params)
-        if self.signer:
-            signature = self.signer.signature_for_request(
-                request.method,
-                str(request.url),
-                headers=dict(request.headers),
-                json=json,
-            )
+        if self.signer and json:
+            signed_fields = SignedFields.from_facilitator_sdk_json(json)
+            signature = self.signer.sign(payload=signed_fields.model_dump_json())
+
             signature_headers = signature_to_headers(signature)
             request.headers.update(signature_headers)
 
@@ -90,7 +85,7 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         uploads: list[SingleFileUpload] | None = None,
         volumes: list[Volume] | None = None,
     ) -> HTTPResponseType:
-        data: JSONDict = {"raw_script": raw_script, "input_url": input_url}
+        data: dict[str, JsonValue] = {"raw_script": raw_script, "input_url": input_url}
         if uploads is not None:
             data["uploads"] = to_json_array(uploads)
         if volumes is not None:
@@ -109,7 +104,7 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         volumes: list[Volume] | None = None,
         target_validator_hotkey: str | None = None,
     ) -> HTTPResponseType:
-        data: JSONDict = {
+        data: dict[str, JsonValue] = {
             "target_validator_hotkey": target_validator_hotkey,
             "executor_class": executor_class,
             "docker_image": docker_image,
@@ -136,7 +131,7 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         }
         if expected_duration is not None:
             data["expected_duration"] = expected_duration
-        return self._prepare_request("PUT", f"/jobs/{job_uuid}/feedback/", json=typing.cast(JSONType, data))
+        return self._prepare_request("PUT", f"/jobs/{job_uuid}/feedback/", json=typing.cast(JsonValue, data))
 
 
 class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
@@ -152,11 +147,11 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
     def close(self):
         self.client.close()
 
-    def handle_response(self, response: httpx.Response) -> JSONType:
+    def handle_response(self, response: httpx.Response) -> JsonValue:
         response.raise_for_status()
         return response.json()
 
-    def get_jobs(self, page: int = 1, page_size: int = 10) -> JSONType:
+    def get_jobs(self, page: int = 1, page_size: int = 10) -> JsonValue:
         return self.handle_response(self._get_jobs(page, page_size))
 
     def get_job(self, job_uuid: str) -> JobState:
@@ -263,7 +258,7 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
     def _get_client(self) -> httpx.AsyncClient:
         return httpx.AsyncClient(base_url=self.base_url, headers={"Authorization": f"Token {self.token}"})
 
-    async def handle_response(self, response: typing.Awaitable[httpx.Response]) -> JSONType:
+    async def handle_response(self, response: typing.Awaitable[httpx.Response]) -> JsonValue:
         awaited_response = await response
         awaited_response.raise_for_status()
         return awaited_response.json()
@@ -277,7 +272,7 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
     async def close(self):
         await self.client.aclose()
 
-    async def get_jobs(self, page: int = 1, page_size: int = 10) -> JSONType:
+    async def get_jobs(self, page: int = 1, page_size: int = 10) -> JsonValue:
         return await self.handle_response(self._get_jobs(page=page, page_size=page_size))
 
     async def get_job(self, job_uuid: str) -> JobState:
