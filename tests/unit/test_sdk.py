@@ -61,12 +61,15 @@ def verified_httpx_mock(httpx_mock, verifier, apiver_module):
     yield
 
     for request in httpx_mock.get_requests():
-        apiver_module.verify_request(
-            request.method,
-            str(request.url),
-            request.headers,
-            json=json.loads(request.content) if request.content else None,
-        )
+        signature = None
+        try:
+            signature = apiver_module.signature_from_headers(request.headers)
+        except Exception:
+            pass
+        if signature and request.content:
+            verifier = apiver_module.VERIFIERS_REGISTRY.get(signature.signature_type)
+            signed_fields = apiver_module.SignedFields.from_facilitator_sdk_json(json.loads(request.content))
+            verifier.verify(signed_fields.model_dump_json(), signature)
 
 
 @pytest.fixture

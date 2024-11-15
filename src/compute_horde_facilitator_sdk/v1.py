@@ -1,9 +1,9 @@
+from compute_horde.fv_protocol.facilitator_requests import Signature, SignedFields
 from compute_horde.signature import (
     SIGNERS_REGISTRY,
     VERIFIERS_REGISTRY,
     BittensorWalletSigner,
     BittensorWalletVerifier,
-    Signature,
     SignatureException,
     SignatureInvalidException,
     SignatureNotFound,
@@ -30,6 +30,7 @@ __all__ = [
     "BittensorWalletVerifier",
     "FacilitatorClient",
     "Signature",
+    "SignedFields",
     "SignatureException",
     "SignatureInvalidException",
     "FacilitatorClientTimeoutException",
