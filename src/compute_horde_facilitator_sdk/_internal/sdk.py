@@ -6,7 +6,7 @@ import typing
 
 import httpx
 from compute_horde.executor_class import DEFAULT_EXECUTOR_CLASS, ExecutorClass  # type: ignore
-from compute_horde.fv_protocol.facilitator_requests import SignedFields
+from compute_horde.fv_protocol.facilitator_requests import SignedFields, to_json_array
 from compute_horde.signature import Signer, signature_to_headers
 from pydantic import JsonValue
 
@@ -29,10 +29,6 @@ logger = logging.getLogger(__name__)
 
 HTTPClientType = typing.TypeVar("HTTPClientType", bound=httpx.Client | httpx.AsyncClient)
 HTTPResponseType = typing.TypeVar("HTTPResponseType", bound=httpx.Response | typing.Awaitable[httpx.Response])
-
-
-def to_json_array(data) -> list[JsonValue]:
-    return typing.cast(list[JsonValue], [x.model_dump() for x in data])
 
 
 class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponseType]):
