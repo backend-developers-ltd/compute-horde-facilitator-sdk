@@ -1,5 +1,6 @@
 import abc
 import asyncio
+import logging
 import time
 import typing
 
@@ -22,6 +23,8 @@ from compute_horde_facilitator_sdk._internal.exceptions import (
 )
 
 BASE_URL = "https://facilitator.computehorde.io/api/v1/"
+
+logger = logging.getLogger(__name__)
 
 
 HTTPClientType = typing.TypeVar("HTTPClientType", bound=httpx.Client | httpx.AsyncClient)
@@ -58,11 +61,13 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
     ) -> HTTPResponseType:
         request = self.client.build_request(method=method, url=url, json=json, params=params)
         if self.signer and json:
-            signed_fields = SignedFields.from_facilitator_sdk_json(json)
-            signature = self.signer.sign(payload=signed_fields.model_dump_json())
-
-            signature_headers = signature_to_headers(signature)
-            request.headers.update(signature_headers)
+            try:
+                signed_fields = SignedFields.from_facilitator_sdk_json(json)
+                signature = self.signer.sign(payload=signed_fields.model_dump_json())
+                signature_headers = signature_to_headers(signature)
+                request.headers.update(signature_headers)
+            except Exception:
+                logger.warning(f"No valid fields to sign in json: {json}")
 
         return typing.cast(HTTPResponseType, self.client.send(request, follow_redirects=True))
 
