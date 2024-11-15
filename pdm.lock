@@ -3,9 +3,9 @@
 
 [metadata]
 groups = ["default", "lint", "release", "test"]
-strategy = ["cross_platform", "inherit_metadata"]
+strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:50090628d36ee5a98a867a524c2c076b2b9ebbc7dcf49fe78e18bd500dc35eb0"
+content_hash = "sha256:62f63d9e9244f26098b3820788bccfc24fdefb383656ab6dddd4f3b89735a248"
 
 [[metadata.targets]]
 requires_python = "==3.11.*"
@@ -361,7 +361,7 @@ files = [
 
 [[package]]
 name = "compute-horde"
-version = "0.0.12"
+version = "0.0.16"
 requires_python = "==3.11.*"
 summary = ""
 groups = ["default"]
@@ -375,8 +375,8 @@ dependencies = [
     "websockets>=11.0",
 ]
 files = [
-    {file = "compute_horde-0.0.12-py3-none-any.whl", hash = "sha256:e3898f196fb13719182063a0273b7b53eeb88dacd2bb59c29b0d527a5b96eb57"},
-    {file = "compute_horde-0.0.12.tar.gz", hash = "sha256:ecf1cc3a89f5b3bdae2dee7c99cc73d4e3a2f0a5dbd5f4bc7ea44869de55e668"},
+    {file = "compute_horde-0.0.16-py3-none-any.whl", hash = "sha256:e94b8d95e457139b36d7081864d8b623ae4fb6851fdb201cb9705c943b57a934"},
+    {file = "compute_horde-0.0.16.tar.gz", hash = "sha256:8ae94674ef5d935b76f1f665ee41574f932cea928631c5e5e8735b868d6c288a"},
 ]
 
 [[package]]
