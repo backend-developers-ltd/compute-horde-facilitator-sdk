@@ -9,6 +9,14 @@ upcoming release can be found in [changelog.d](changelog.d).
 
 <!-- towncrier release notes start -->
 
+## [0.0.7](https://github.com/backend-developers-ltd/compute-horde-facilitator-sdk/releases/tag/v0.0.7) - 2025-01-27
+
+
+### Changed
+
+- Updated dependencies.
+
+
 ## [0.0.6](https://github.com/backend-developers-ltd/compute-horde-facilitator-sdk/releases/tag/v0.0.6) - 2024-10-25
 
 
