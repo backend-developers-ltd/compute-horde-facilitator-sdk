@@ -31,7 +31,7 @@ job = compute_horde.wait_for_job(job["uuid"])
 
 print(
     f'Job finished with status: {job["status"]}. Stdout is: "{job["stdout"]}",'
-    f' output_url is {job["output_download_url"]}'
+    f" output_url is {job['output_download_url']}"
 )
 # During job execution, any files generated in the /output directory will be incorporated into the final job result,
 # which can be downloaded from the url printed above. Full STDOUT and STDERR will also be there.
