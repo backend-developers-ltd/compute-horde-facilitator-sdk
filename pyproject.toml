@@ -22,7 +22,7 @@ dependencies = [
     "httpx>=0.27.0",
     "phx-class-registry>=4.1.0",
     "typing_extensions",
-    "compute-horde==0.0.18",
+    "compute-horde>=0.0.20",
 ]
 
 [project.urls]
