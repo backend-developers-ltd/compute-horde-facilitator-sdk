@@ -419,7 +419,30 @@ def test_wait_for_job__timeout(
 
 def test_submit_job_feedback(facilitator_client, httpx_mock, verified_httpx_mock):
     job_uuid = "abc123"
-    feedback = {"result_correctness": 0.9, "expected_duration": 10.0}
+    result_correctness = 0.9
+    expected_duration = 10.0
+    feedback = {"result_correctness": result_correctness, "expected_duration": expected_duration}
     httpx_mock.add_response(method="PUT", url=f"https://example.com/jobs/{job_uuid}/feedback/", json=feedback)
-    response = facilitator_client.submit_job_feedback(job_uuid, feedback)
+
+    response = facilitator_client.submit_job_feedback(
+        job_uuid, result_correctness=result_correctness, expected_duration=expected_duration
+    )
+
     assert response == feedback
+    assert json.loads(httpx_mock.get_request().content) == feedback
+
+
+@pytest.mark.asyncio
+async def test_async_submit_job_feedback(async_facilitator_client, httpx_mock, verified_httpx_mock):
+    job_uuid = "abc123"
+    result_correctness = 0.9
+    expected_duration = 10.0
+    feedback = {"result_correctness": result_correctness, "expected_duration": expected_duration}
+    httpx_mock.add_response(method="PUT", url=f"https://example.com/jobs/{job_uuid}/feedback/", json=feedback)
+
+    response = await async_facilitator_client.submit_job_feedback(
+        job_uuid, result_correctness=result_correctness, expected_duration=expected_duration
+    )
+
+    assert response == feedback
+    assert json.loads(httpx_mock.get_request().content) == feedback
