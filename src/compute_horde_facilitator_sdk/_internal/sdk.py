@@ -104,6 +104,7 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
         uploads: list[SingleFileUpload] | None = None,
         volumes: list[Volume] | None = None,
         target_validator_hotkey: str | None = None,
+        artifacts_dir: str | None = None,
     ) -> HTTPResponseType:
         data: dict[str, JsonValue] = {
             "target_validator_hotkey": target_validator_hotkey,
@@ -113,6 +114,7 @@ class FacilitatorClientBase(abc.ABC, typing.Generic[HTTPClientType, HTTPResponse
             "env": env or {},  # type: ignore # mypy doesn't acknowledge dict[str, str] | None as subtype of JSONDict
             "use_gpu": use_gpu,
             "input_url": input_url,
+            "artifacts_dir": artifacts_dir,
         }
         if uploads is not None:
             data["uploads"] = to_json_array(uploads)
@@ -187,6 +189,7 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
         uploads: list[SingleFileUpload] | None = None,
         volumes: list[Volume] | None = None,
         target_validator_hotkey: str | None = None,
+        artifacts_dir: str | None = None,
     ) -> JobState:
         response = self.handle_response(
             self._create_docker_job(
@@ -199,6 +202,7 @@ class FacilitatorClient(FacilitatorClientBase[httpx.Client, httpx.Response]):
                 uploads=uploads,
                 volumes=volumes,
                 target_validator_hotkey=target_validator_hotkey,
+                artifacts_dir=artifacts_dir,
             )
         )
         return typing.cast(JobState, response)
@@ -308,6 +312,7 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
         uploads: list[SingleFileUpload] | None = None,
         volumes: list[Volume] | None = None,
         target_validator_hotkey: str | None = None,
+        artifacts_dir: str | None = None,
     ) -> JobState:
         response = await self.handle_response(
             self._create_docker_job(
@@ -320,6 +325,7 @@ class AsyncFacilitatorClient(FacilitatorClientBase[httpx.AsyncClient, typing.Awa
                 uploads=uploads,
                 volumes=volumes,
                 target_validator_hotkey=target_validator_hotkey,
+                artifacts_dir=artifacts_dir,
             )
         )
         return typing.cast(JobState, response)

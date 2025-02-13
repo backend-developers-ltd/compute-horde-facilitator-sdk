@@ -34,6 +34,7 @@ class DockerJobPayload(pydantic.BaseModel):
     uploads: list[SingleFilePostUpload] | None = None
     volumes: list[Volume] | None = None
     target_validator_hotkey: str | None = None
+    artifacts_dir: str | None = None
 
 
 @pytest.fixture
@@ -157,6 +158,7 @@ def test_create_docker_job(facilitator_client, httpx_mock, verified_httpx_mock):
         use_gpu=use_gpu,
         input_url="https://example.com/input",
         target_validator_hotkey="5Hotkey",
+        artifacts_dir="/artifacts",
     )
     assert response == expected_response
 
@@ -170,6 +172,7 @@ def test_create_docker_job(facilitator_client, httpx_mock, verified_httpx_mock):
         input_url=input_url,
         executor_class=DEFAULT_EXECUTOR_CLASS,
         target_validator_hotkey="5Hotkey",
+        artifacts_dir="/artifacts",
     )
 
 
@@ -220,6 +223,7 @@ def test_create_docker_job_uploads_volumes(
         volumes=volumes,
         executor_class=DEFAULT_EXECUTOR_CLASS,
         target_validator_hotkey=None,
+        artifacts_dir=None,
     )
 
 
@@ -284,6 +288,7 @@ async def test_async_create_docker_job(async_facilitator_client, httpx_mock, ver
         input_url=input_url,
         executor_class=DEFAULT_EXECUTOR_CLASS,
         target_validator_hotkey=None,
+        artifacts_dir=None,
     )
 
 
@@ -340,6 +345,7 @@ async def test_async_create_docker_job_uploads_volumes(
         volumes=volumes,
         executor_class=DEFAULT_EXECUTOR_CLASS,
         target_validator_hotkey=None,
+        artifacts_dir=None,
     )
 
 
